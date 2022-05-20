@@ -3,6 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+//2000000000000000000
 /// This contract handles the main logic for CrypChip
 contract CrypChip {
 
@@ -27,6 +28,8 @@ contract CrypChip {
         uint eId;
         address payer;
         address creator;
+
+        //The total remaining expense to be paid out - will be split equally between participants
         uint totalExpense;
         address[] participants;
         ExpenseStatus status;
@@ -34,9 +37,16 @@ contract CrypChip {
         mapping(address => bool) settled;
     }
 
+    //Total number of groups
     mapping(uint => ExpenseGroup) groups;
-    mapping(uint => Expense) expenses;
+
+    //Total expenses
+    mapping(uint => Expense) public expenses;
+
+    //How many expenses are there in a group
     mapping(uint => uint[]) groupExpenses;
+
+    //How many expense groups is an inidividual a part of
     mapping(address => ExpenseGroup[]) expenseGroups;
 
     function createGroup(address[] memory participants) public returns(bool){
@@ -58,7 +68,7 @@ contract CrypChip {
     }
 
 
-    function addExpense(uint _gId, address _payer, uint _totalExpense, address[] memory _participants) public {
+    function addExpense(uint _gId, address _payer, uint _totalExpense, address[] memory _participants) public returns(uint){
         require(groups[_gId].gId != 0, "Group doesn't exist");
         require(_payer != address(0), "Payer cannot be zero address");
         require(_totalExpense > 0, "Total expenses should be greater than 0");
@@ -78,23 +88,68 @@ contract CrypChip {
 
         //Create mappings of users and their balances
         uint numParticipants = _participants.length;
-        uint expensePerPerson;
-        unchecked {
-            expensePerPerson = _totalExpense/numParticipants;
-        }
+        uint expensePerPerson = _totalExpense/numParticipants;
+  
         
-        //Populating the balances and the user mapping
+        //Populating the balances and the settles(true/false) mapping
         for(uint i = 0; i < numParticipants; i++){
             newExpense.balances[_participants[i]] = expensePerPerson;
+            newExpense.settled[_participants[i]] = false;
         }
-
 
         //Mapping the expenses of a group
         groupExpenses[_gId].push(id);
 
-        //Mapping the expense groups an individual has created
-
+        return expensePerPerson;
 
     }
+
+    //Each individual can call this function to settle up their debts(it's a payable function)
+    function settleUp(uint expenseId) public payable returns(ExpenseStatus status){
+        Expense storage newExpense = expenses[expenseId];
+        address to = newExpense.payer;
+        uint amount = newExpense.balances[msg.sender];
+        uint counter = 0;
+
+        require(newExpense.status != ExpenseStatus.SETTLED, "This expense is no longer valid.");
+        require(amount > 0, "No balances left in this expense.");
+        require(msg.value >= amount, "You have not sent enough money to settle,");
+
+        payable(to).transfer(amount);
+        newExpense.settled[msg.sender] = true;
+
+        for(uint i = 0; i < newExpense.participants.length; i++){
+            if(newExpense.settled[newExpense.participants[i]] == true){
+                counter++;
+            }
+        }
+
+        if(counter == newExpense.participants.length){
+            newExpense.status = ExpenseStatus.SETTLED;
+        }
+        else {
+            newExpense.status = ExpenseStatus.ONGOING;
+        }
+
+        return expenses[expenseId].status;
+    }
+
+    /// ALL THE GET CALLS ARE BELOW
+
+    //Returns the group IDs that the user is a part of
+    function getGroups(address user) public view returns(ExpenseGroup[] memory) {
+        return expenseGroups[user];
+    }
+
+    //Returns all the expense IDs of a particular group
+    function getExpensesFromGroup(uint groupId) public view returns(uint[] memory) {
+        return groupExpenses[groupId];
+    }
+
+    //Unable to return expenses due to nested mappings - need to find a solution
+    // function getExpense(uint expenseId) public returns(Expense memory) {
+    //     Expense memory oldExpense = expenses[expenseId];
+    //     return oldExpense;
+    // }
 
 }
