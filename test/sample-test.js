@@ -8,7 +8,7 @@ describe("CrypChip", function () {
     await crypchip.deployed();
 
 
-    const createGroupTx = await crypchip.createGroup(["0x420674Af540BE70031cbdE8C9279fA4fF4b049CE", "0xb8761b30c951d0614459b2e227Ea944df0314665"]);
+    const createGroupTx = await crypchip.createGroup("Group1", ["0x420674Af540BE70031cbdE8C9279fA4fF4b049CE", "0xb8761b30c951d0614459b2e227Ea944df0314665"]);
 
     // wait until the transaction is mined
     await createGroupTx.wait();
@@ -24,7 +24,7 @@ describe("CrypChip", function () {
     await crypchip.deployed();
 
 
-    const createGroupTx = await crypchip.createGroup(["0x420674Af540BE70031cbdE8C9279fA4fF4b049CE", "0xb8761b30c951d0614459b2e227Ea944df0314665"]);
+    const createGroupTx = await crypchip.createGroup("Group1", ["0x420674Af540BE70031cbdE8C9279fA4fF4b049CE", "0xb8761b30c951d0614459b2e227Ea944df0314665"]);
 
     // wait until the transaction is mined
     await createGroupTx.wait();

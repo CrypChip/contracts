@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-//2000000000000000000
+//"4000000000000000"
 /// This contract handles the main logic for CrypChip
 contract CrypChip {
 
@@ -19,6 +19,7 @@ contract CrypChip {
 
     struct ExpenseGroup {
         uint gId;
+        string groupName;
         address owner;
         address[] participants;
     }
@@ -26,6 +27,7 @@ contract CrypChip {
     struct Expense {
         uint gId;
         uint eId;
+        string expenseName;
         address payer;
         address creator;
 
@@ -40,16 +42,16 @@ contract CrypChip {
     //Total number of groups
     mapping(uint => ExpenseGroup) groups;
 
-    //Total expenses
+    //Total expenses - mapped by ID
     mapping(uint => Expense) public expenses;
 
-    //How many expenses are there in a group
+    //How many expenses are there in a group - IDs of all the expenses are added
     mapping(uint => uint[]) groupExpenses;
 
     //How many expense groups is an inidividual a part of
     mapping(address => ExpenseGroup[]) expenseGroups;
 
-    function createGroup(address[] memory participants) public returns(bool){
+    function createGroup(string memory _groupName, address[] memory participants) public returns(bool){
 
         //Generating a group ID every time a new group is created
         gIds.increment();
@@ -58,6 +60,7 @@ contract CrypChip {
         //Create a new group
         ExpenseGroup storage newGroup = groups[id];
         newGroup.gId = id;
+        newGroup.groupName = _groupName;
         newGroup.owner = msg.sender;
         newGroup.participants = participants;
 
@@ -72,7 +75,7 @@ contract CrypChip {
     }
 
 
-    function addExpense(uint _gId, address _payer, uint _totalExpense, address[] memory _participants) public returns(uint){
+    function addExpense(uint _gId, string memory _expenseName, address _payer, uint _totalExpense, address[] memory _participants) public returns(uint){
         require(groups[_gId].gId != 0, "Group doesn't exist");
         require(_payer != address(0), "Payer cannot be zero address");
         require(_totalExpense > 0, "Total expenses should be greater than 0");
@@ -83,6 +86,7 @@ contract CrypChip {
         uint id = eIds.current();
         Expense storage newExpense = expenses[id];
         newExpense.gId = _gId;
+        newExpense.expenseName = _expenseName;
         newExpense.eId = id;
         newExpense.payer = _payer;
         newExpense.creator = msg.sender;
